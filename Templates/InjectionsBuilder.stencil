@@ -1,0 +1,16 @@
+import Foundation
+
+class InjectionsBuilder: NSObject {
+{% for type in types.protocols|implements:"Injection" %}
+    {% if type|annotated:"builder" %}
+    {% if type.attributes.objc %}@objc {% endif %}var {{ type.name|lowerFirstLetter|replace:"Injection","" }}: {{ type.name }} {
+        return {{ type.name }}Impl(injector: injector)
+    }
+    {% endif %}    
+{% endfor %}
+    private let injector: Injector
+
+    @objc init(injector: Injector) {
+        self.injector = injector
+    }
+}

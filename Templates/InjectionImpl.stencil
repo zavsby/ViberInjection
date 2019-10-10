@@ -1,0 +1,56 @@
+{% for injectionType in types.protocols|implements:"Injection" %}
+// sourcery:file:Generated/{{ injectionType.name}}
+import Foundation
+{% for import in injectionType.annotations.imports %}
+import {{ import }}
+{% endfor %}
+
+class {{ injectionType.name }}Impl: {{ injectionType.name }} {
+    {% for variable in injectionType.variables %}
+        {% if variable|annotated:"local" %}{% set localVarDeclaration %}var {{ variable.name }}: {{ variable.typeName }}{% endset %}
+            {% if variable.annotations.local != "init" %}
+    lazy {{ localVarDeclaration }} = factory.{{ variable.name }}
+            {% else %}
+    {{ localVarDeclaration }}
+            {% endif %}
+        {% elif variable|annotated:"child" or variable.typeName|hasSuffix:"Injection" %}     
+    var {{ variable.name }}: {{ variable.typeName }} {
+        return {{ variable.typeName }}Impl(injector: injector)
+    }
+        {% else %}
+        {% set intermediate %}{% if variable|annotated:"parent" %}{{ variable.annotations.parent }}().{% endif %}{% endset %}
+        {% set name %}{% if variable|annotated:"origin" %}{{ variable.annotations.origin }}{% else %}{{ variable.name }}{% endif %}{% endset %}
+        {% set call %}{% if not variable|annotated:"origin" %}(){% endif %}{% endset %}
+    var {{ variable.name }}: {{ variable.typeName }} {
+        return injector.{{ intermediate }}{{ name }}{{ call }}
+    }
+        {% endif %}                
+    {% endfor %}
+
+    private let injector: Injector
+    {% set hasFactory %}{% for variable in injectionType.variables|annotated:"local" %}{% if forloop.first %}true{% endif %}{% endfor %}{% endset %}
+    {% set factoryTypeName %}{{ injectionType.name }}Factory{% endset %}
+    {% if hasFactory == "true" %}
+    private var factory: {{ factoryTypeName }}
+    {% endif %}
+
+    init(injector: Injector) {
+        self.injector = injector
+    {% if hasFactory == "true" %}
+        {% set isFactoryWithInjector %}{% for factoryType in types.structs|implements:"InjectionFactory" where factoryType.name == factoryTypeName %}true{% endfor %}{% endset %}
+        {% if isFactoryWithInjector == "true" %}
+        factory = {{ factoryTypeName }}(injector: injector)
+        {% else %}
+        factory = {{ factoryTypeName }}()
+        {% endif %}
+    {% endif %}
+    {% for variable in injectionType.variables|annotated:"local" %}
+        {% if variable.annotations.local == "init" %}
+        {{ variable.name }} = factory.{{ variable.name  }}
+        {% endif %}
+    {% endfor %}
+    }
+}
+
+// sourcery:end
+{% endfor %}    
