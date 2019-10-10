@@ -19,4 +19,4 @@ TBA
 
 ## License
 
-[MIT](LICENSE) This is the property of Viber Media SARL. It can used or modified without any limitation. Viber is not responsible of any issues you may having using it. © Sergey Plotkin
+[MIT](LICENSE) This is the property of Viber Media SARL. It can used or modified without any limitations. Viber is not responsible of any issues you may have while using it. © Sergey Plotkin
